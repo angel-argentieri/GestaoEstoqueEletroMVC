@@ -75,7 +75,10 @@ class EletronicoController {
 
         $id = $this->model->cadastrar($dados, $quantidade_inicial);
         if (!$id) {
-            $this->view->sendResponse(['error' => 'Erro ao cadastrar eletronico.'], 500);
+            $this->view->sendResponse([
+                'error' => 'Erro ao cadastrar eletronico.',
+                'detalhe' => $this->model->getErro()
+            ], 500);
             return;
         }
 

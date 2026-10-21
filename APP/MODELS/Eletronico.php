@@ -1,9 +1,14 @@
 <?php
 class Eletronico {
     private $db;
+    private $erro;
 
     public function __construct($db) {
         $this->db = $db;
+    }
+
+    public function getErro() {
+        return $this->erro;
     }
 
     public function listarTodos() {
@@ -65,46 +70,50 @@ class Eletronico {
                 )
             ");
 
-            $stmt->bindValue(':nome',                $dados['nome']);
-            $stmt->bindValue(':descricao',           $dados['descricao']);
-            $stmt->bindValue(':numero_lote',         $dados['numero_lote']);
-            $stmt->bindValue(':fabricante',          $dados['fabricante']);
-            $stmt->bindValue(':categoria',           $dados['categoria']);
-            $stmt->bindValue(':tensao',              $dados['tensao'] ?? null);
-            $stmt->bindValue(':dimensoes',           $dados['dimensoes'] ?? null);
-            $stmt->bindValue(':resolucao',           $dados['resolucao'] ?? null);
-            $stmt->bindValue(':capacidade',          $dados['capacidade'] ?? null);
-            $stmt->bindValue(':conectividade',       $dados['conectividade'] ?? null);
-            $stmt->bindValue(':preco',               $dados['preco']);
-            $stmt->bindValue(':processador',         $dados['processador'] ?? null);
-            $stmt->bindValue(':memoria',             $dados['memoria'] ?? null);
-            $stmt->bindValue(':camera',              $dados['camera'] ?? null);
-            $stmt->bindValue(':sistema_operacional', $dados['sistema_operacional'] ?? null);
-            $stmt->bindValue(':cor',                 $dados['cor'] ?? null);
-            $stmt->bindValue(':estoque_minimo',      $dados['estoque_minimo'] ?? 5, PDO::PARAM_INT);
-            $stmt->execute();
+            $stmt->execute([
+                ':nome'                => $dados['nome'],
+                ':descricao'           => $dados['descricao'],
+                ':numero_lote'         => $dados['numero_lote'],
+                ':fabricante'          => $dados['fabricante'],
+                ':categoria'           => $dados['categoria'],
+                ':tensao'              => $dados['tensao'] ?? null,
+                ':dimensoes'           => $dados['dimensoes'] ?? null,
+                ':resolucao'           => $dados['resolucao'] ?? null,
+                ':capacidade'          => $dados['capacidade'] ?? null,
+                ':conectividade'       => $dados['conectividade'] ?? null,
+                ':preco'               => $dados['preco'],
+                ':processador'         => $dados['processador'] ?? null,
+                ':memoria'             => $dados['memoria'] ?? null,
+                ':camera'              => $dados['camera'] ?? null,
+                ':sistema_operacional' => $dados['sistema_operacional'] ?? null,
+                ':cor'                 => $dados['cor'] ?? null,
+                ':estoque_minimo'      => $dados['estoque_minimo'] ?? 5
+            ]);
 
-            $id_eletronico = $this->db->lastInsertId();
+            $id_eletronico = (int) $this->db->lastInsertId();
 
             $stmtEstoque = $this->db->prepare("INSERT INTO estoque (id_eletronico, quantidade_atual) VALUES (:id, :qtd)");
-            $stmtEstoque->bindValue(':id',  $id_eletronico, PDO::PARAM_INT);
-            $stmtEstoque->bindValue(':qtd', $quantidade_inicial, PDO::PARAM_INT);
-            $stmtEstoque->execute();
+            $stmtEstoque->execute([
+                ':id'  => $id_eletronico,
+                ':qtd' => $quantidade_inicial
+            ]);
 
             if ($quantidade_inicial > 0) {
                 $stmtMov = $this->db->prepare("
                     INSERT INTO movimentacoes (id_eletronico, id_usuario, tipo, quantidade, saldo_anterior, saldo_posterior, observacao)
                     VALUES (:id_eletronico, 1, 'ENTRADA', :qtd, 0, :qtd, 'Carga inicial')
                 ");
-                $stmtMov->bindValue(':id_eletronico', $id_eletronico, PDO::PARAM_INT);
-                $stmtMov->bindValue(':qtd',           $quantidade_inicial, PDO::PARAM_INT);
-                $stmtMov->execute();
+                $stmtMov->execute([
+                    ':id_eletronico' => $id_eletronico,
+                    ':qtd'           => $quantidade_inicial
+                ]);
             }
 
             $this->db->commit();
             return $id_eletronico;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $this->db->rollBack();
+            $this->erro = $e->getMessage();
             return false;
         }
     }

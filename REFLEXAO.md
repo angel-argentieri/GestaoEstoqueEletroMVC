@@ -1,5 +1,5 @@
-## 21/10/2026 — GET /eletronico
-Integrantes e papéis: Aluno 1 (Driver) | Aluno 2 (Navigator)
+## GET /eletronico
+Integrantes e papéis: Angelina (Driver) | Beatriz (Navigator)
 Problema: Produtos cadastrados sem registro na tabela de estoque vinham com saldo nulo ou eram omitidos na listagem.
 Nossa tentativa: Usamos INNER JOIN entre eletrônicos e estoque.
 Prompt enviado à IA: "Por que o INNER JOIN pode ocultar produtos sem estoque? Dê apenas uma pista."
@@ -40,7 +40,7 @@ Evidência: Captura no Thunder Client / Postman (CT01).
 O que aprendemos: O LEFT JOIN garante que todos os produtos apareçam na listagem, mesmo quando ainda não têm estoque associado.
 
 ## 21/10/2026 — POST /eletronico
-Integrantes e papéis: Aluno 2 (Driver) | Aluno 1 (Navigator)
+Integrantes e papéis: Angelina (Driver) | Beatriz (Navigator)
 Problema: Ao cadastrar um produto novo com quantidade inicial, precisamos inserir na tabela eletronicos, na tabela estoque e criar uma movimentação de ENTRADA sem deixar dados pela metade caso ocorra erro.
 Nossa tentativa: Fazer três INSERTs separados no Controller sem transação.
 Prompt enviado à IA: "Como garantir que o cadastro do eletrônico e o estoque inicial sejam salvos de forma atômica?"
@@ -66,7 +66,7 @@ Evidência: Captura no Thunder Client / Postman (CT04).
 O que aprendemos: Transações com beginTransaction() evitam inconsistência no banco caso uma das tabelas falhe na gravação.
 
 ## 21/10/2026 — PUT /eletronico
-Integrantes e papéis: Aluno 1 (Driver) | Aluno 2 (Navigator)
+Integrantes e papéis: Angelina (Driver) | Beatriz (Navigator)
 Problema: Atualizar os dados do produto sem permitir que o número de lote seja trocado por um lote que já pertence a outro eletrônico.
 Nossa tentativa: UPDATE direto pelo ID sem verificar colisão de lote.
 Prompt enviado à IA: "Como validar lote duplicado no UPDATE sem acusar erro no próprio eletrônico que está sendo editado?"
@@ -91,7 +91,7 @@ Evidência: Captura no Thunder Client / Postman (CT07).
 O que aprendemos: Em atualizações, a regra de campo único deve sempre desconsiderar o próprio ID do registro alterado.
 
 ## 21/10/2026 — DELETE /eletronico?id=1
-Integrantes e papéis: Aluno 2 (Driver) | Aluno 1 (Navigator)
+Integrantes e papéis: Angelina (Driver) | Beatriz (Navigator)
 Problema: Desativar o produto sem apagar os dados do banco para preservar o histórico de estoque e movimentações (exclusão lógica).
 Nossa tentativa: Usar DELETE no banco de dados, o que quebrava chaves estrangeiras.
 Prompt enviado à IA: "Como fazer exclusão lógica de produto no MySQL com PDO?"
@@ -106,7 +106,7 @@ Evidência: Captura no Thunder Client / Postman (CT09).
 O que aprendemos: Exclusão lógica mantém a integridade referencial com tabelas filhas sem perder registros históricos.
 
 ## 21/10/2026 — PUT /estoque
-Integrantes e papéis: Aluno 1 (Driver) | Aluno 2 (Navigator)
+Integrantes e papéis: Angelina (Driver) | Beatriz (Navigator)
 Problema: Movimentar entrada ou saída de itens sem deixar o saldo ficar negativo e garantindo que o estoque não seja alterado simultaneamente.
 Nossa tentativa: Calcular o saldo direto no PHP e atualizar a tabela estoque sem transação.
 Prompt enviado à IA: "Como usar SELECT ... FOR UPDATE dentro de transação no PDO para movimentar estoque?"
@@ -135,7 +135,7 @@ Evidência: Captura no Thunder Client / Postman (CT11).
 O que aprendemos: SELECT ... FOR UPDATE impede que duas operações mexam no mesmo saldo ao mesmo tempo, evitando erros de concorrência.
 
 ## 21/10/2026 — GET /movimentacoes
-Integrantes e papéis: Aluno 2 (Driver) | Aluno 1 (Navigator)
+Integrantes e papéis: Angelina (Driver) | Beatriz (Navigator)
 Problema: Listar o histórico de movimentações trazendo os nomes legíveis do eletrônico e do operador em vez de apenas números de ID.
 Nossa tentativa: Fazer SELECT direto na tabela movimentacoes sem JOIN.
 Prompt enviado à IA: "Como fazer consulta com JOIN em eletronicos e usuarios e permitir filtro por ID?"
