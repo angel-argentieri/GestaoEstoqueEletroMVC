@@ -101,11 +101,12 @@ class Eletronico {
             if ($quantidade_inicial > 0) {
                 $stmtMov = $this->db->prepare("
                     INSERT INTO movimentacoes (id_eletronico, id_usuario, tipo, quantidade, saldo_anterior, saldo_posterior, observacao)
-                    VALUES (:id_eletronico, 1, 'ENTRADA', :qtd, 0, :qtd, 'Carga inicial')
+                    VALUES (:id_eletronico, 1, 'ENTRADA', :quantidade, 0, :saldo_posterior, 'Carga inicial')
                 ");
                 $stmtMov->execute([
-                    ':id_eletronico' => $id_eletronico,
-                    ':qtd'           => $quantidade_inicial
+                    ':id_eletronico'   => $id_eletronico,
+                    ':quantidade'      => $quantidade_inicial,
+                    ':saldo_posterior' => $quantidade_inicial
                 ]);
             }
 
@@ -141,26 +142,26 @@ class Eletronico {
             WHERE id_eletronico = :id AND ativo = 1
         ");
 
-        $stmt->bindValue(':id',                  $id, PDO::PARAM_INT);
-        $stmt->bindValue(':nome',                $dados['nome']);
-        $stmt->bindValue(':descricao',           $dados['descricao']);
-        $stmt->bindValue(':numero_lote',         $dados['numero_lote']);
-        $stmt->bindValue(':fabricante',          $dados['fabricante']);
-        $stmt->bindValue(':categoria',           $dados['categoria']);
-        $stmt->bindValue(':tensao',              $dados['tensao'] ?? null);
-        $stmt->bindValue(':dimensoes',           $dados['dimensoes'] ?? null);
-        $stmt->bindValue(':resolucao',           $dados['resolucao'] ?? null);
-        $stmt->bindValue(':capacidade',          $dados['capacidade'] ?? null);
-        $stmt->bindValue(':conectividade',       $dados['conectividade'] ?? null);
-        $stmt->bindValue(':preco',               $dados['preco']);
-        $stmt->bindValue(':processador',         $dados['processador'] ?? null);
-        $stmt->bindValue(':memoria',             $dados['memoria'] ?? null);
-        $stmt->bindValue(':camera',              $dados['camera'] ?? null);
-        $stmt->bindValue(':sistema_operacional', $dados['sistema_operacional'] ?? null);
-        $stmt->bindValue(':cor',                 $dados['cor'] ?? null);
-        $stmt->bindValue(':estoque_minimo',      $dados['estoque_minimo'] ?? 5, PDO::PARAM_INT);
-
-        return $stmt->execute();
+        return $stmt->execute([
+            ':id'                  => $id,
+            ':nome'                => $dados['nome'],
+            ':descricao'           => $dados['descricao'],
+            ':numero_lote'         => $dados['numero_lote'],
+            ':fabricante'          => $dados['fabricante'],
+            ':categoria'           => $dados['categoria'],
+            ':tensao'              => $dados['tensao'] ?? null,
+            ':dimensoes'           => $dados['dimensoes'] ?? null,
+            ':resolucao'           => $dados['resolucao'] ?? null,
+            ':capacidade'          => $dados['capacidade'] ?? null,
+            ':conectividade'       => $dados['conectividade'] ?? null,
+            ':preco'               => $dados['preco'],
+            ':processador'         => $dados['processador'] ?? null,
+            ':memoria'             => $dados['memoria'] ?? null,
+            ':camera'              => $dados['camera'] ?? null,
+            ':sistema_operacional' => $dados['sistema_operacional'] ?? null,
+            ':cor'                 => $dados['cor'] ?? null,
+            ':estoque_minimo'      => $dados['estoque_minimo'] ?? 5
+        ]);
     }
 
     public function desativar($id) {
