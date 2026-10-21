@@ -1,87 +1,75 @@
 <?php
-declare(strict_types=1);
+require_once '../APP/MODELS/Estoque.php';
+require_once '../APP/VIEWS/JsonView.php';
 
-namespace App\Controllers;
+class EstoqueController {
+    private $model;
+    private $view;
 
-use App\Core\Request;
-use App\Models\Estoque;
-use App\Views\JsonView;
-use RuntimeException;
-use Throwable;
-
-class EstoqueController
-{
-    private Estoque $model;
-
-    public function __construct()
-    {
-        $this->model = new Estoque();
+    public function __construct($db) {
+        $this->model = new Estoque($db);
+        $this->view  = new JsonView();
     }
 
-    public function movimentar(Request $request): void
-    {
-        $idRaw = $request->get('id_eletronico') ?? $request->get('id');
-        $quantidadeRaw = $request->get('quantidade');
+    public function movimentar() {
+        $data = json_decode(file_get_contents('php://input'), true);
+        if (!$data) {
+            $data = $_POST;
+        }
 
-        if (!is_numeric($idRaw) || (int)$idRaw <= 0) {
-            JsonView::error('ID do eletrônico inválido.', 422);
+        $id_eletronico = $data['id_eletronico'] ?? ($data['id'] ?? null);
+        $tipo          = isset($data['tipo']) ? strtoupper(trim($data['tipo'])) : null;
+        $quantidade    = $data['quantidade'] ?? null;
+        $observacao    = $data['observacao'] ?? null;
+
+        if (!$id_eletronico || !is_numeric($id_eletronico) || (int)$id_eletronico <= 0) {
+            $this->view->sendResponse(['error' => 'ID do eletronico invalido.'], 422);
             return;
         }
 
-        if (!is_numeric($quantidadeRaw) || (int)$quantidadeRaw <= 0) {
-            JsonView::error('A quantidade deve ser um número inteiro maior que zero.', 422);
+        if (!$quantidade || !is_numeric($quantidade) || (int)$quantidade <= 0) {
+            $this->view->sendResponse(['error' => 'A quantidade deve ser um numero inteiro maior que zero.'], 422);
             return;
         }
 
-        $tipo = strtoupper(trim((string)$request->get('tipo', '')));
         if ($tipo !== 'ENTRADA' && $tipo !== 'SAIDA') {
-            JsonView::error('O tipo de movimentação deve ser ENTRADA ou SAIDA.', 422);
+            $this->view->sendResponse(['error' => 'Tipo de movimentacao deve ser ENTRADA ou SAIDA.'], 422);
             return;
         }
 
-        $idEletronico = (int)$idRaw;
-        $quantidade = (int)$quantidadeRaw;
-        $observacao = $request->get('observacao');
-        $observacao = !empty($observacao) ? trim((string)$observacao) : null;
+        $resultado = $this->model->movimentar((int)$id_eletronico, $tipo, (int)$quantidade, $observacao);
 
-        try {
-            $resultado = $this->model->movimentar($idEletronico, $tipo, $quantidade, $observacao);
-            JsonView::render([
-                'status' => 'sucesso',
-                'mensagem' => 'Movimentação realizada com sucesso.',
-                'dados' => $resultado
-            ], 200);
-        } catch (RuntimeException $e) {
-            if ($e->getMessage() === 'PRODUTO_NAO_ENCONTRADO') {
-                JsonView::error('Eletrônico não encontrado ou inativo.', 404);
-            } elseif ($e->getMessage() === 'SALDO_INSUFICIENTE') {
-                JsonView::error('Saldo insuficiente para realizar a saída.', 422);
-            } else {
-                JsonView::error($e->getMessage(), 400);
-            }
-        } catch (Throwable $e) {
-            JsonView::error('Erro interno ao movimentar estoque: ' . $e->getMessage(), 500);
+        if ($resultado === 'NAO_ENCONTRADO') {
+            $this->view->sendResponse(['error' => 'Eletronico nao encontrado ou inativo.'], 404);
+            return;
         }
+
+        if ($resultado === 'SALDO_INSUFICIENTE') {
+            $this->view->sendResponse(['error' => 'Saldo insuficiente para realizar a saida.'], 422);
+            return;
+        }
+
+        if (!$resultado) {
+            $this->view->sendResponse(['error' => 'Erro ao movimentar estoque.'], 500);
+            return;
+        }
+
+        $this->view->sendResponse([
+            'message' => 'Estoque movimentado com sucesso.',
+            'dados'   => $resultado
+        ]);
     }
 
-    public function historico(Request $request): void
-    {
-        $idRaw = $request->getQuery('id') ?? $request->getQuery('id_eletronico');
-        $idEletronico = null;
+    public function getMovimentacoes() {
+        $id = $_GET['id'] ?? ($_GET['id_eletronico'] ?? null);
 
-        if ($idRaw !== null) {
-            if (!is_numeric($idRaw) || (int)$idRaw <= 0) {
-                JsonView::error('ID inválido para filtro.', 422);
-                return;
-            }
-            $idEletronico = (int)$idRaw;
+        if ($id !== null && (!is_numeric($id) || (int)$id <= 0)) {
+            $this->view->sendResponse(['error' => 'ID invalido.'], 422);
+            return;
         }
 
-        try {
-            $dados = $this->model->listarMovimentacoes($idEletronico);
-            JsonView::render($dados, 200);
-        } catch (Throwable $e) {
-            JsonView::error('Erro ao consultar histórico de movimentações: ' . $e->getMessage(), 500);
-        }
+        $dados = $this->model->buscarTodas($id ? (int)$id : null);
+        $this->view->sendResponse($dados);
     }
 }
+?>

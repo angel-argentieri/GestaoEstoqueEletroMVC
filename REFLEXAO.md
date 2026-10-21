@@ -1,103 +1,97 @@
 # Diário de Aprendizagem e Decisões — REFLEXAO.md
 
-## 21/10/2026 — Fundação da Aplicação (Configuração, Request, Database e JsonView)
+## 21/10/2026 — Fundação (Database, JsonView e Roteador)
 Integrantes e papéis: Driver: Aluno 1 | Navigator: Aluno 2
-Problema: Como estruturar a base MVC sem autenticação, garantindo conexão PDO reutilizável, captura da rota correta no XAMPP e saída em JSON com códigos HTTP padronizados.
-Nossa tentativa: Criamos a pasta Core com Database.php abrindo conexão direta e um script inicial no index.php. A URL vinha com o prefixo da pasta do projeto e quebrava o roteamento.
-Prompt enviado à IA: "Como normalizar a URL no Request.php para remover o prefixo da pasta do XAMPP e como estruturar a classe JsonView?"
-Sugestão da IA: Tratar `$_SERVER['REQUEST_URI']` com `parse_url` e regex para limpar `/GestaoEstoqueEletroMVC/public`, além de criar métodos estáticos em `JsonView` para `http_response_code` e `json_encode`.
-Decisão da dupla: Aceitar a sugestão integralmente, pois centraliza o tratamento de requisição e resposta sem poluir os controllers.
-Teste realizado: Acesso a uma rota inexistente `GET /rota-teste` via Postman.
-Resultado obtido: HTTP 404 | JSON `{"status":"erro","mensagem":"Rota não encontrada.","detalhes":{"metodo":"GET","rota":"/rota-teste"}}`
-Evidência: Postman CT03 | commit fundacao-mvc
-O que aprendemos: Como o front controller canaliza todas as requisições pelo index.php via .htaccess e a importância de padronizar a emissão de cabeçalhos JSON.
+Problema: Conectar no MySQL com PDO e estruturar o roteamento no index.php passando a conexão para os Controllers, além de devolver respostas em JSON.
+Nossa tentativa: Criamos uma classe de conexão estática cheia de configurações complexas e namespaces que dificultavam o require manual.
+Prompt enviado à IA: "Como fazer uma classe Database simples com PDO igual aos projetos anteriores e passar a conexão pelo construtor do Controller?"
+Sugestão da IA: Criar a classe Database com `getConnection()` instanciando o PDO com utf8mb4 e passar a variável `$db` na criação dos Controllers no index.php, usando uma classe BaseView/JsonView com `sendResponse($data, $code)`.
+Decisão da dupla: Aceitar — porque segue o padrão didático que já aprendemos e utilizamos em sala de aula (como no projeto DEVVO).
+Teste realizado: GET /rotaInexistente no Thunder Client / Postman.
+Resultado obtido: HTTP 404 | JSON `{"error":"Rota nao encontrada."}`.
+Evidência: Postman CT02 | commit fundacao-projeto
+O que aprendemos: A injeção da conexão `$db` via construtor simplifica o código e facilita o controle do ciclo de vida do PDO.
 
 ---
 
 ## 21/10/2026 — GET /eletronico
 Integrantes e papéis: Driver: Aluno 1 | Navigator: Aluno 2
-Problema: Produtos cadastrados sem movimentação ou sem linha de estoque poderiam não aparecer na listagem ou retornar saldo nulo, além de ser necessário calcular se o estoque está baixo.
-Nossa tentativa: Havíamos pensado em fazer um INNER JOIN simples entre a tabela eletronicos e estoque, mas ficamos com dúvida se ocultaria itens sem estoque.
-Prompt enviado à IA: "Por que o INNER JOIN pode ocultar produtos sem estoque e como calcular o estoque_baixo diretamente no PHP?"
-Sugestão da IA: Usar LEFT JOIN com `COALESCE(es.quantidade_atual, 0)` no SQL e, no Model, percorrer com foreach definindo `estoque_baixo = (quantidade_atual <= estoque_minimo)`.
-Decisão da dupla: Adaptar a sugestão para manter tipagem de inteiros e floats nos campos numéricos, garantindo retorno limpo para o front/Postman.
-Teste realizado: Requisição `GET http://localhost/GestaoEstoqueEletroMVC/public/eletronico`.
-Resultado obtido: HTTP 200 | JSON contendo a lista dos 3 eletrônicos iniciais com a propriedade `estoque_baixo` booleana calculada corretamente.
-Evidência: Postman CT01 e CT02 | commit rota-get-eletronico
-O que aprendemos: O `LEFT JOIN` preserva todos os registros da tabela da esquerda (eletrônicos) mesmo quando a tabela relacionada ainda não possui registros correspondentes.
+Problema: Produtos sem estoque apareciam com saldo nulo.
+Nossa tentativa: Usamos INNER JOIN entre eletrônico e estoque.
+Prompt enviado à IA: "Por que o INNER JOIN pode ocultar produtos sem estoque? Dê apenas uma pista."
+Sugestão da IA: Comparar INNER JOIN com LEFT JOIN e tratar valores NULL.
+Decisão da dupla: Adaptar para LEFT JOIN e saldo 0, após conferir os campos reais.
+Teste realizado: GET /eletronico no Postman.
+Resultado obtido: HTTP 200 | JSON com array dos produtos contendo saldo e `estoque_baixo` calculado.
+Evidência: Postman CT01 | commit rota-get-eletronico
+O que aprendemos: LEFT JOIN mantém produtos sem registro de estoque na listagem.
 
 ---
 
 ## 21/10/2026 — POST /eletronico
 Integrantes e papéis: Driver: Aluno 2 | Navigator: Aluno 1
-Problema: O cadastro exige inserir dados cadastrais na tabela `eletronicos`, inicializar a tabela `estoque` e, caso a quantidade inicial seja maior que zero, registrar a primeira movimentação de ENTRADA, tudo de forma atômica para evitar dados órfãos se algo falhar.
-Nossa tentativa: Fazer três `INSERT` separados no controller sem transação.
-Prompt enviado à IA: "Como garantir que o cadastro do eletrônico e a criação do estoque inicial aconteçam juntos ou sejam cancelados se houver erro?"
-Sugestão da IA: Utilizar transação PDO (`beginTransaction`, `commit` e `rollBack`), capturar o `lastInsertId` do eletrônico e tratar chave duplicada de `numero_lote` com HTTP 409.
-Decisão da dupla: Aceitar a abordagem com transação dentro do Model e deixar as validações de campos obrigatórios (nome, lote, fabricante etc.) e tipagem no Controller devolvendo HTTP 422 em falha de validação.
-Teste realizado: Envio de POST com JSON de um novo produto (Mouse Gamer) com estoque inicial de 10 unidades; em seguida, tentativa de envio do mesmo lote.
-Resultado obtido: Primeiro teste: HTTP 201 | JSON `{"status":"sucesso","mensagem":"Eletrônico cadastrado com sucesso.","id_eletronico":4}`. Segundo teste: HTTP 409 | JSON `{"status":"erro","mensagem":"Número de lote já cadastrado no sistema."}`.
-Evidência: Postman CT04 e CT05 | commit rota-post-eletronico
-O que aprendemos: Transações com PDO são essenciais quando duas ou mais tabelas dependem da mesma operação de negócio, garantindo a integridade dos dados caso ocorra uma falha intermediária.
+Problema: Ao cadastrar um eletrônico com quantidade inicial, precisamos inserir na tabela eletronicos, na tabela estoque e criar a primeira movimentação de ENTRADA.
+Nossa tentativa: Fazer os INSERTs um após o outro sem transação.
+Prompt enviado à IA: "Como garantir que se o cadastro falhar no estoque ele não deixe o eletrônico salvo pela metade?"
+Sugestão da IA: Utilizar `$this->db->beginTransaction()`, `$this->db->commit()` e `$this->db->rollBack()`, além de verificar o lote antes com `buscarPorLote()`.
+Decisão da dupla: Aceitar — porque impede dados órfãos e trata erro 409 caso o lote já exista.
+Teste realizado: POST /eletronico com JSON de um novo produto e estoque inicial de 5 unidades.
+Resultado obtido: HTTP 201 | JSON `{"message":"Eletronico cadastrado com sucesso.","id_eletronico":4}`.
+Evidência: Postman CT04 | commit rota-post-eletronico
+O que aprendemos: Transações garantem atomicidade em operações que tocam em mais de uma tabela.
 
 ---
 
 ## 21/10/2026 — PUT /eletronico
 Integrantes e papéis: Driver: Aluno 1 | Navigator: Aluno 2
-Problema: Atualizar todos os dados cadastrais de um eletrônico garantindo que o produto exista e esteja ativo, e impedir que o `numero_lote` seja alterado para um lote que já pertença a outro produto.
-Nossa tentativa: Fizemos um UPDATE direto passando o ID recebido, sem verificar antes se o produto existia e sem checar colisão de lote em outros registros.
-Prompt enviado à IA: "Como validar colisão de lote único no PUT sem acusar erro quando o lote enviado for o mesmo que o próprio produto já usa?"
-Sugestão da IA: Criar um método no Model que busque pelo número de lote com a cláusula adicional `AND id_eletronico != :id`. Se achar outro produto, retornar 409; se o produto não existir, retornar 404.
-Decisão da dupla: Aceitar e implementar no Controller a busca prévia com `buscarPorId` (para 404) e `buscarPorLote` ignorando o próprio ID (para 409).
-Teste realizado: Atualização de nome e preço do eletrônico id 1 (`PUT /eletronico` com corpo JSON) e tentativa com ID inexistente (999).
-Resultado obtido: Produto 1: HTTP 200 | JSON `{"status":"sucesso","mensagem":"Eletrônico atualizado com sucesso."}`. ID 999: HTTP 404 | JSON `{"status":"erro","mensagem":"Eletrônico não encontrado."}`.
-Evidência: Postman CT06 e CT07 | commit rota-put-eletronico
-O que aprendemos: Em operações de edição, a validação de unicidade precisa desconsiderar o próprio ID do registro que está sendo alterado.
+Problema: Atualizar todos os dados do produto sem permitir que o número de lote seja alterado para um que já pertence a outro produto.
+Nossa tentativa: UPDATE direto pelo ID sem checar se o produto existia e sem conferir duplicidade de lote em outros IDs.
+Prompt enviado à IA: "Como verificar se o número do lote já existe em outro produto no UPDATE?"
+Sugestão da IA: Fazer uma consulta SELECT com `WHERE numero_lote = :lote AND id_eletronico != :id`. Se retornar linha, devolver 409; se o produto não existir no banco, devolver 404.
+Decisão da dupla: Aceitar — porque valida a regra de lote único sem acusar conflito caso o lote pertença ao próprio produto que está sendo editado.
+Teste realizado: PUT /eletronico enviando o JSON com dados atualizados e teste com ID inexistente 999.
+Resultado obtido: HTTP 200 | JSON `{"message":"Eletronico atualizado com sucesso."}` e HTTP 404 para ID inexistente.
+Evidência: Postman CT07 e CT08 | commit rota-put-eletronico
+O que aprendemos: A validação de campos únicos na edição precisa ignorar o registro atual.
 
 ---
 
-## 21/10/2026 — DELETE /eletronico
+## 21/10/2026 — DELETE /eletronico?id=1
 Integrantes e papéis: Driver: Aluno 2 | Navigator: Aluno 1
-Problema: Desativar o produto sem apagar seus dados físicos, preservando integridade referencial com tabelas de estoque e movimentações (exclusão lógica).
-Nossa tentativa: Estávamos pensando em rodar um comando `DELETE FROM eletronicos WHERE id = ?`, mas isso violaria chaves estrangeiras com histórico.
-Prompt enviado à IA: "Qual a melhor forma de implementar exclusão lógica no MySQL com PDO e saber se o registro realmente existia e foi desativado?"
-Sugestão da IA: Executar `UPDATE eletronicos SET ativo = 0 WHERE id_eletronico = :id AND ativo = 1` e verificar se `rowCount() > 0`. Se for 0, o registro não existia ou já estava inativo (HTTP 404).
-Decisão da dupla: Aceitar integralmente. É muito mais simples e seguro, pois evita que consultas futuras tragam itens inativos sem quebrar o histórico de movimentações anteriores.
-Teste realizado: `DELETE /eletronico?id=3` e em seguida uma segunda chamada repetida com o mesmo ID.
-Resultado obtido: Primeira chamada: HTTP 200 | JSON `{"status":"sucesso","mensagem":"Eletrônico desativado com sucesso."}`. Segunda chamada: HTTP 404 | JSON `{"status":"erro","mensagem":"Eletrônico não encontrado ou já desativado."}`.
-Evidência: Postman CT08 e CT09 | commit rota-delete-eletronico
-O que aprendemos: Exclusão lógica com `rowCount()` permite saber instantaneamente se a alteração ocorreu sem precisar de duas consultas ao banco.
+Problema: Desativar o produto sem apagar nada das tabelas de estoque e movimentações (exclusão lógica).
+Nossa tentativa: Pensamos em rodar um DELETE FROM eletronicos, mas o banco bloqueava por causa das chaves estrangeiras.
+Prompt enviado à IA: "Como implementar a exclusão lógica mantendo o histórico de estoque intacto?"
+Sugestão da IA: Fazer um UPDATE na coluna `ativo = 0 WHERE id_eletronico = :id AND ativo = 1` e checar `rowCount() > 0`.
+Decisão da dupla: Aceitar — porque atende à regra de negócio de não destruir o histórico e devolve 404 se o produto já estava inativo ou não existe.
+Teste realizado: DELETE /eletronico?id=3 no Postman.
+Resultado obtido: HTTP 200 | JSON `{"message":"Eletronico desativado com sucesso."}`. Segunda chamada retornou HTTP 404.
+Evidência: Postman CT09 e CT10 | commit rota-delete-eletronico
+O que aprendemos: Exclusão lógica com UPDATE preserva integridade referencial e auditoria.
 
 ---
 
 ## 21/10/2026 — PUT /estoque
 Integrantes e papéis: Driver: Aluno 1 | Navigator: Aluno 2
-Problema: Registrar movimentações de entrada e saída no estoque com cálculo do novo saldo, impedindo saldo negativo em saídas e garantindo bloqueio de concorrência.
-Nossa tentativa: Ler o saldo com SELECT, fazer a soma/subtração no PHP e dar UPDATE sem trava de linha e sem transação.
-Prompt enviado à IA: "Como usar SELECT ... FOR UPDATE dentro de transação no PDO para evitar que duas requisições simultâneas deixem o saldo inconsistente?"
-Sugestão da IA: Abrir transação com `beginTransaction()`, executar a busca do saldo atual com a cláusula `FOR UPDATE`, calcular o saldo posterior, validar se não fica negativo (retornando 422 em caso de saldo insuficiente), atualizar a tabela `estoque`, gravar o registro na tabela `movimentacoes` e confirmar com `commit()`.
-Decisão da dupla: Aceitar e utilizar o `id_usuario = 1` fixo para atender a chave estrangeira da tabela movimentações sem necessidade de login.
-Teste realizado: 
-1. Entrada de 5 unidades no eletrônico 1.
-2. Saída de 2 unidades no eletrônico 1.
-3. Tentativa de saída de 500 unidades no eletrônico 1 (saldo insuficiente).
-Resultado obtido: 
-1. HTTP 200 | saldo atualizado de 8 para 13.
-2. HTTP 200 | saldo atualizado de 13 para 11.
-3. HTTP 422 | JSON `{"status":"erro","mensagem":"Saldo insuficiente para realizar a saída."}`.
-Evidência: Postman CT10, CT11, CT12 e CT13 | commit rota-put-estoque
-O que aprendemos: `SELECT ... FOR UPDATE` bloqueia a linha no banco de dados até o término da transação, garantindo consistência estrita em concorrência.
+Problema: Dar entrada ou saída de mercadoria, impedindo que o saldo final fique menor que zero e gravando a linha no histórico de movimentações.
+Nossa tentativa: Fazer a conta do saldo direto no Controller e dar UPDATE no estoque.
+Prompt enviado à IA: "Como fazer a leitura do saldo com trava no MySQL para movimentação segura de estoque?"
+Sugestão da IA: Usar `SELECT ... FOR UPDATE` dentro de transação, calcular o novo saldo, checar se não é negativo (retornando erro 422 de saldo insuficiente) e inserir na tabela `movimentacoes`.
+Decisão da dupla: Aceitar — porque cumpre o pseudocódigo da Fase 2 e utiliza o usuário padrão `id_usuario = 1` na tabela de movimentações.
+Teste realizado: PUT /estoque com tipo ENTRADA de 3 unidades, depois SAIDA de 2 unidades e tentativa de SAIDA de 500 unidades.
+Resultado obtido: HTTP 200 nas duas primeiras operações com novo saldo calculado e HTTP 422 `{"error":"Saldo insuficiente para realizar a saida."}` na terceira.
+Evidência: Postman CT11, CT12 e CT13 | commit rota-put-estoque
+O que aprendemos: `SELECT ... FOR UPDATE` bloqueia concorrência e transações garantem que a tabela de estoque e a de movimentações sempre fiquem sincronizadas.
 
 ---
 
 ## 21/10/2026 — GET /movimentacoes
 Integrantes e papéis: Driver: Aluno 2 | Navigator: Aluno 1
-Problema: Listar todo o histórico de movimentações com os nomes do produto e do usuário responsável, permitindo filtro opcional pelo ID do produto.
-Nossa tentativa: Fazer consulta simples na tabela `movimentacoes`, mas o resultado trazia apenas os IDs numéricos (`id_eletronico` e `id_usuario`), sem nomes legíveis.
-Prompt enviado à IA: "Como montar a query do histórico unindo os nomes do produto e do usuário e adicionando filtro opcional por ID?"
-Sugestão da IA: Fazer `JOIN eletronicos` e `JOIN usuarios`, ordenando por `data_movimentacao DESC`. No PHP, verificar se o parâmetro `id` foi enviado na query string para concatenar `WHERE m.id_eletronico = :id`.
-Decisão da dupla: Adaptar validando no Controller se o ID enviado na query é um inteiro positivo antes de passar ao Model; se for inválido, devolver HTTP 422.
-Teste realizado: `GET /movimentacoes` sem parâmetros e `GET /movimentacoes?id=1`.
-Resultado obtido: HTTP 200 | Lista completa com tipo, quantidade, saldo anterior, posterior, nome do produto e nome do operador. No teste com id=1, filtrou apenas o produto correspondente.
+Problema: Listar o histórico de movimentações trazendo os nomes do produto e do usuário em vez de apenas os IDs, permitindo filtrar por um produto específico.
+Nossa tentativa: Fazer um SELECT simples na tabela movimentacoes sem JOIN.
+Prompt enviado à IA: "Como trazer os nomes legíveis do eletrônico e do operador no histórico e aceitar filtro opcional de ID?"
+Sugestão da IA: Montar a query com `JOIN eletronicos` e `JOIN usuarios`, adicionando `WHERE id_eletronico = :id` caso o parâmetro venha no `$_GET['id']`.
+Decisão da dupla: Aceitar — porque deixa o histórico claro e legível para quem consulta a API.
+Teste realizado: GET /movimentacoes e GET /movimentacoes?id=1 no Postman.
+Resultado obtido: HTTP 200 | JSON com a lista completa e ordenada pela data mais recente. Com o filtro, trouxe apenas as movimentações do produto 1.
 Evidência: Postman CT15 e CT16 | commit rota-get-movimentacoes
-O que aprendemos: Como estruturar consultas parametrizadas opcionais e enriquecer os dados de auditoria com JOINs sem quebrar a separação de camadas.
+O que aprendemos: Usar JOINs para enriquecer retornos de auditoria sem duplicar dados no banco.
