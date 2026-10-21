@@ -1,0 +1,307 @@
+{
+	"info": {
+		"_postman_id": "b3c976d2-e567-4d91-884b-fa5a93e8e19a",
+		"name": "GestaoEstoqueEletroMVC — Testes básicos",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost/GestaoEstoqueEletroMVC/public",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "CT01 - Listar Eletrônicos (GET /eletronico)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/eletronico",
+					"host": ["{{baseUrl}}"],
+					"path": ["eletronico"]
+				}
+			}
+		},
+		{
+			"name": "CT02 - Rota Inexistente 404 (GET /rotaInexistente)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/rotaInexistente",
+					"host": ["{{baseUrl}}"],
+					"path": ["rotaInexistente"]
+				}
+			}
+		},
+		{
+			"name": "CT03 - Preflight CORS (OPTIONS /eletronico)",
+			"request": {
+				"method": "OPTIONS",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/eletronico",
+					"host": ["{{baseUrl}}"],
+					"path": ["eletronico"]
+				}
+			}
+		},
+		{
+			"name": "CT04 - Cadastrar Eletrônico com Sucesso (POST /eletronico)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nome\": \"Mouse Gamer RGB Pro\",\n  \"descricao\": \"Mouse óptico 16000 DPI com iluminação RGB\",\n  \"numero_lote\": \"LOTE-MS-001\",\n  \"fabricante\": \"HyperGear\",\n  \"categoria\": \"Periféricos\",\n  \"preco\": 149.90,\n  \"estoque_minimo\": 5,\n  \"quantidade_inicial\": 12\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/eletronico",
+					"host": ["{{baseUrl}}"],
+					"path": ["eletronico"]
+				}
+			}
+		},
+		{
+			"name": "CT05 - Cadastrar Eletrônico com Lote Duplicado (POST /eletronico - 409)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nome\": \"Outro Mouse\",\n  \"descricao\": \"Tentativa de lote repetido\",\n  \"numero_lote\": \"LOTE-NB-001\",\n  \"fabricante\": \"Qualquer\",\n  \"categoria\": \"Periféricos\",\n  \"preco\": 99.00,\n  \"estoque_minimo\": 2,\n  \"quantidade_inicial\": 0\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/eletronico",
+					"host": ["{{baseUrl}}"],
+					"path": ["eletronico"]
+				}
+			}
+		},
+		{
+			"name": "CT06 - Cadastrar com Campo Inválido (POST /eletronico - 422)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nome\": \"\",\n  \"descricao\": \"Falta fabricante e lote\",\n  \"preco\": -10\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/eletronico",
+					"host": ["{{baseUrl}}"],
+					"path": ["eletronico"]
+				}
+			}
+		},
+		{
+			"name": "CT07 - Atualizar Eletrônico com Sucesso (PUT /eletronico)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"id\": 1,\n  \"nome\": \"Notebook Vision 14 Plus\",\n  \"descricao\": \"Notebook atualizado para estudo e escritório.\",\n  \"numero_lote\": \"LOTE-NB-001\",\n  \"fabricante\": \"TechVision Pro\",\n  \"categoria\": \"Notebook\",\n  \"preco\": 3499.00,\n  \"estoque_minimo\": 4\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/eletronico",
+					"host": ["{{baseUrl}}"],
+					"path": ["eletronico"]
+				}
+			}
+		},
+		{
+			"name": "CT08 - Atualizar Eletrônico Inexistente (PUT /eletronico - 404)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"id\": 9999,\n  \"nome\": \"Produto Fantasma\",\n  \"descricao\": \"Inexistente\",\n  \"numero_lote\": \"LOTE-9999\",\n  \"fabricante\": \"Fantasma\",\n  \"categoria\": \"Teste\",\n  \"preco\": 100.00\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/eletronico",
+					"host": ["{{baseUrl}}"],
+					"path": ["eletronico"]
+				}
+			}
+		},
+		{
+			"name": "CT09 - Desativar Eletrônico com Sucesso (DELETE /eletronico?id=1)",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/eletronico?id=3",
+					"host": ["{{baseUrl}}"],
+					"path": ["eletronico"],
+					"query": [
+						{
+							"key": "id",
+							"value": "3"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "CT10 - Desativar Eletrônico Inexistente ou Já Inativo (DELETE /eletronico?id=9999 - 404)",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/eletronico?id=9999",
+					"host": ["{{baseUrl}}"],
+					"path": ["eletronico"],
+					"query": [
+						{
+							"key": "id",
+							"value": "9999"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "CT11 - Registrar Entrada de Estoque (PUT /estoque)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"id_eletronico\": 1,\n  \"tipo\": \"ENTRADA\",\n  \"quantidade\": 5,\n  \"observacao\": \"Recebimento fornecedor\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/estoque",
+					"host": ["{{baseUrl}}"],
+					"path": ["estoque"]
+				}
+			}
+		},
+		{
+			"name": "CT12 - Registrar Saída de Estoque (PUT /estoque)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"id_eletronico\": 1,\n  \"tipo\": \"SAIDA\",\n  \"quantidade\": 2,\n  \"observacao\": \"Venda balcão\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/estoque",
+					"host": ["{{baseUrl}}"],
+					"path": ["estoque"]
+				}
+			}
+		},
+		{
+			"name": "CT13 - Saída com Saldo Insuficiente (PUT /estoque - 422)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"id_eletronico\": 1,\n  \"tipo\": \"SAIDA\",\n  \"quantidade\": 99999,\n  \"observacao\": \"Tentativa excessiva\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/estoque",
+					"host": ["{{baseUrl}}"],
+					"path": ["estoque"]
+				}
+			}
+		},
+		{
+			"name": "CT14 - Movimentação com Tipo Inválido (PUT /estoque - 422)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"id_eletronico\": 1,\n  \"tipo\": \"DOACAO\",\n  \"quantidade\": 5\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/estoque",
+					"host": ["{{baseUrl}}"],
+					"path": ["estoque"]
+				}
+			}
+		},
+		{
+			"name": "CT15 - Consultar Histórico Geral (GET /movimentacoes)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/movimentacoes",
+					"host": ["{{baseUrl}}"],
+					"path": ["movimentacoes"]
+				}
+			}
+		},
+		{
+			"name": "CT16 - Consultar Histórico por Produto (GET /movimentacoes?id=1)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/movimentacoes?id=1",
+					"host": ["{{baseUrl}}"],
+					"path": ["movimentacoes"],
+					"query": [
+						{
+							"key": "id",
+							"value": "1"
+						}
+					]
+				}
+			}
+		}
+	]
+}
