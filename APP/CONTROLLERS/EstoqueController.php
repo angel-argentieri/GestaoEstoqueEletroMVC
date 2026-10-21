@@ -60,6 +60,7 @@ class EstoqueController {
         ]);
     }
 
+
     public function getMovimentacoes() {
         $id = $_GET['id'] ?? ($_GET['id_eletronico'] ?? null);
 

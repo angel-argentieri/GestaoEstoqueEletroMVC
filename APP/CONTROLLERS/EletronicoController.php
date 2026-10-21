@@ -44,7 +44,8 @@ class EletronicoController {
             $this->view->sendResponse(['error' => 'Numero de lote ja cadastrado.'], 409);
             return;
         }
-
+        
+ 
         $estoque_minimo = isset($data['estoque_minimo']) ? (int)$data['estoque_minimo'] : 5;
         $quantidade_inicial = isset($data['quantidade_inicial']) ? (int)$data['quantidade_inicial'] : (isset($data['estoque_inicial']) ? (int)$data['estoque_inicial'] : 0);
 
